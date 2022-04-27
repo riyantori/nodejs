@@ -44,7 +44,7 @@ class AlbumsHandler {
                 message: 'Maaf, terjadi kegagalan pada server kami.',
             });
             response.code(500);
-            console.error(error);
+            //console.error(error);
             return response;
         };
     }
@@ -75,7 +75,7 @@ class AlbumsHandler {
                 message: 'Maaf, terjadi kegagalan pada server kami',
             });
             response.code(500);
-            console.error(error);
+            //console.error(error);
             return response;
         }
         
@@ -107,7 +107,7 @@ class AlbumsHandler {
                 message: 'Maaf, terjadi kegagalan pada server kami.',
             });
             response.code(500);
-            console.error(error);
+            //console.error(error);
             return response;
         };
     }
@@ -136,7 +136,7 @@ class AlbumsHandler {
                 message: 'Maaf, terjadi terjadi kegagalan pada server kami.'
             });
             response.code(500);
-            console.error(error);
+            //console.error(error);
             return response;
         }
     }

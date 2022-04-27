@@ -16,7 +16,7 @@ class AlbumsService {
 
         const query = {
             text: 'INSERT INTO albums VALUES($1, $2, $3, $4, $5) RETURNING id',
-            values: [id, name, year, insertedAt, updatedAt,],
+            values: [id, name, year, insertedAt, updatedAt],
         };
 
         const result = await this._pool.query(query);
