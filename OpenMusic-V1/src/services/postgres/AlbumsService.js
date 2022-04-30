@@ -2,7 +2,8 @@ const { nanoid } = require("nanoid");
 const { Pool } = require("pg");
 const InvariantError = require("../../exceptions/InvariantError");
 const NotFoundError = require("../../exceptions/NotFoundError");
-const { mapDBToModel } = require("../../utils");
+const { mapDBModelSong } = require("../../utils/dbModelSong")
+const { mapDBModelAlbum } = require("../../utils/dbModelAlbum");
 
 class AlbumsService {
     constructor(){
@@ -11,12 +12,10 @@ class AlbumsService {
 
     async addAlbum({ name, year }) {
         const id = nanoid(16);
-        const insertedAt = new Date().toISOString();
-        const updatedAt = insertedAt;
 
         const query = {
-            text: 'INSERT INTO albums VALUES($1, $2, $3, $4, $5) RETURNING id',
-            values: [id, name, year, insertedAt, updatedAt],
+            text: 'INSERT INTO albums VALUES($1, $2, $3) RETURNING id',
+            values: [id, name, year],
         };
 
         const result = await this._pool.query(query);
@@ -27,7 +26,7 @@ class AlbumsService {
         return result.rows[0].id;
     }
 
-    async getAlbumById(id) {
+    async getAlbumById (id) {
         const query = {
             text: 'SELECT * FROM albums WHERE id = $1',
             values: [id],
@@ -39,14 +38,13 @@ class AlbumsService {
             throw new NotFoundError('Album tidak ditemukan');
         };
 
-        return result.rows.map(mapDBToModel)[0];
+        return result.rows.map(mapDBModelAlbum)[0];
     }
 
     async editAlbumById(id, { name, year }) {
-        const updatedAt = new Date().toISOString();
         const query = {
-            text: 'UPDATE albums SET name=$1, year=$2, updated_at=$3 WHERE id=$4 RETURNING id',
-            values: [name, year, updatedAt, id],
+            text: 'UPDATE albums SET name=$1, year=$2 WHERE id=$3 RETURNING id',
+            values: [name, year, id],
         };
 
         const result = await this._pool.query(query);
@@ -67,6 +65,16 @@ class AlbumsService {
         if (!result.rows.length) {
             throw new NotFoundError('Gagal menghapus album. Id tidak ditemukan');
         }
+    }
+
+    async getSongsByAlbumId(id) {
+        const query= {
+            text: 'SELECT id, title, performer FROM songs WHERE album_id = $1',
+            values: [id],
+        }
+
+        const result = await this._pool.query(query);
+        return result.rows.map(mapDBModelSong);
     }
 }
 

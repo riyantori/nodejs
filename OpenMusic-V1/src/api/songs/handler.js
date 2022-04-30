@@ -8,7 +8,7 @@ class SongsHandler {
         this.postSongHandler = this.postSongHandler.bind(this);
         this.getSongsHandler = this.getSongsHandler.bind(this);
         this.getSongByIdHandler = this.getSongByIdHandler.bind(this);
-        this.putSongByIdHandler = this.putSongByIdHandler.bind(this);
+        this.editSongByIdHandler = this.editSongByIdHandler.bind(this);
         this.deleteSongByIdHandler = this.deleteSongByIdHandler.bind(this);
     }
 
@@ -16,11 +16,11 @@ class SongsHandler {
         try {
             this._validator.validateSongPayload(request.payload);
             const {
-                title, year, performer, genre, duration,
+                title, year, genre, performer, duration, albumId
             } = request.payload;
     
             const songId = await this._service.addSong({
-                title, year, performer, genre, duration,
+                title, year, genre, performer, duration, albumId
             }); 
     
             const response = h.response({
@@ -48,19 +48,40 @@ class SongsHandler {
                 message: 'Maaf, terjadi kegagalan pada server kami.',
             });
             response.code(500);
-            //console.error(error);
+            console.error(error);
             return response;
         }
     }
 
-    async getSongsHandler() {
-        const songs = await this._service.getSongs();
-        return {
-            status: 'success',
-            data: {
-                songs,
-            },
-        };
+    async getSongsHandler(request, h) {
+        try {
+            const { title, performer} = request.query;
+            const songs = await this._service.getSongs(title, performer);
+            return {
+                status: 'success',
+                data: {
+                    songs,
+                },
+            };
+        }catch(error) {
+            if (error instanceof ClientError) {
+                const response = h.response({
+                    status: 'fail',
+                    message: error.message,
+                });
+                response.code(error.statusCode);
+                return response;
+            }
+
+            //Server Error!
+            const response = h.response({
+                status: 'error',
+                message: 'Maaf, terjadi kegagalan pada server kami.'
+            });
+            response.code(500);
+            console.error(error);
+            return response;
+        }  
     }
 
     async getSongByIdHandler(request, h) {
@@ -89,24 +110,24 @@ class SongsHandler {
                 message: 'Maaf, terjadi kegagalan pada server kami.',
             });
             response.code(500);
-            //console.error(error);
+            console.error(error);
             return response;
         }
     }
 
-    async putSongByIdHandler(request, h) {
+    async editSongByIdHandler(request, h) {
         try {
-            this._validator.validateSongPayload(request.params);
+            this._validator.validateSongPayload(request.payload);
             const { id } = request.params;
             await this._service.editSongById(id, request.payload);
             return {
                 status: 'success',
                 message: 'Lagu berhasil diperbarui',
             };
-        }catch(error){
+        }catch (error) {
             if (error instanceof ClientError) {
                 const response = h.response({
-                    status: 'fail',
+                     status: 'fail',
                     message: error.message,
                 });
                 response.code(error.statusCode);
@@ -114,12 +135,12 @@ class SongsHandler {
             }
 
             //Server Error!
-            const response =h.response({
+            const response = h.response({
                 status: 'error',
                 message: 'Maaf, terjadi kegagalan pada server kami.',
             });
             response.code(500);
-            //console.error(error);
+            console.error(error);
             return response;
         }
         
@@ -149,7 +170,7 @@ class SongsHandler {
                 message: 'Maaf, terjadi kegagalan pada server kami.'
             });
             response.code(500);
-            //console.error(error);
+            console.error(error);
             return response;
         };
     }

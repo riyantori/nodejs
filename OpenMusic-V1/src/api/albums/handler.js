@@ -15,14 +15,14 @@ class AlbumsHandler {
     async postAlbumHandler(request, h){
         try{
             this._validator.validateAlbumPayload(request.payload);
-            const { name, year} = request.payload;
+            const { name, year } = request.payload;
 
             const albumId = await this._service.addAlbum({ name, year });
 
             const response = h.response({
                 status: 'success',
                 message: 'Album berhasil ditambahkan',
-                date: {
+                data: {
                     albumId,
                 },
             });
@@ -44,7 +44,7 @@ class AlbumsHandler {
                 message: 'Maaf, terjadi kegagalan pada server kami.',
             });
             response.code(500);
-            //console.error(error);
+            console.error(error);
             return response;
         };
     }
@@ -52,11 +52,13 @@ class AlbumsHandler {
     async getAlbumByIdHandler(request, h) {
         try{
             const { id } = request.params;
+            const songs = await this._service.getSongsByAlbumId(id);
             const album = await this._service.getAlbumById(id);
+            const resultSongsInAlbum = { ...album, songs };
             return {
                 status: 'success',
                 data: {
-                    album,
+                    album: resultSongsInAlbum,
                 },
             };
         } catch (error) {
@@ -75,10 +77,9 @@ class AlbumsHandler {
                 message: 'Maaf, terjadi kegagalan pada server kami',
             });
             response.code(500);
-            //console.error(error);
+            console.error(error);
             return response;
         }
-        
     }
 
     async putAlbumByIdHandler(request, h) {
@@ -107,7 +108,7 @@ class AlbumsHandler {
                 message: 'Maaf, terjadi kegagalan pada server kami.',
             });
             response.code(500);
-            //console.error(error);
+            console.error(error);
             return response;
         };
     }
@@ -136,7 +137,7 @@ class AlbumsHandler {
                 message: 'Maaf, terjadi terjadi kegagalan pada server kami.'
             });
             response.code(500);
-            //console.error(error);
+            console.error(error);
             return response;
         }
     }

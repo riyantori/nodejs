@@ -2,7 +2,7 @@ const { Pool } = require('pg')
 const { nanoid } = require("nanoid");
 const InvariantError = require('../../exceptions/InvariantError')
 const NotFoundError = require("../../exceptions/NotFoundError");
-const { mapDBToModel } = require('../../utils');
+const { mapDBModelSong } = require('../../utils/dbModelSong');
 
 class SongsService {
     constructor(){
@@ -10,15 +10,13 @@ class SongsService {
     }
 
     async addSong({
-        title, year, performer, genre, duration,
+        title, year, genre, performer, duration, 
     }) {
         const id = nanoid(16);
-        const insertedAt = new Date().toISOString();
-        const updatedAt = insertedAt;
 
         const query = {
-            text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6) RETURNING id',
-            values: [id, title, year, performer, genre, duration, insertedAt, updatedAt,]
+            text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+            values: [id, title, year, genre, performer, duration, "albumId"],
         };
         console.log(query.values)
         const result = await this._pool.query(query);
@@ -30,9 +28,21 @@ class SongsService {
         return result.rows[0].id;
     }
 
-    async getSongs() {
-        const result = await this._pool.query('SELECT id, title, performer FROM songs')
-        return result.rows;
+    async getSongs(title, performer) {
+        let result = await this._pool.query('SELECT id, title, performer FROM songs')
+
+        if (title !== undefined) {
+            const query = {
+                text: `SELECT id, title, performer FROM songs WHERE LOWER(title) LIKE $1`,
+                values: [`%${title}%`]
+            };
+            console.log(`${title}`);
+            result = await this._pool.query(query);
+        }
+        if (performer !== undefined) {
+            result = await this._pool.query(`SELECT id, title, performer FROM songs WHERE LOWER(performer) LIKE '%${performer}%'`);
+        }
+        return result.rows.map(mapDBModelSong);
     }
 
     async getSongById(id) {
@@ -46,21 +56,20 @@ class SongsService {
             throw new NotFoundError('Lagu tidak ditemukan')
         }
 
-        return result.rows.map(mapDBToModel)[0];
+        return result.rows.map(mapDBModelSong)[0];
     }
 
     async editSongById( id, { 
-        title, year, performer, genre, duration, 
+        title, year, genre, performer, duration, albumId
     }) {
-        const updatedAt = new Date().toISOString();
         const query = {
-            text: 'UPDATE songs SET title = $1, year = $2, performer = $3, genre = $4, duration = $5, updated_at = $6 WHERE id = $7 RETURNING id',
-            values: [title, year, performer, genre, duration, updatedAt, id],
+            text: 'UPDATE songs SET title = $1, year = $2, genre = $3, performer = $4, duration = $5, album_id = $6 WHERE id = $7 RETURNING id',
+            values: [title, year, genre, performer, duration, albumId, id],
         };
 
         const result = await this._pool.query(query);
 
-        if(!result.rows.length) {c
+        if (!result.rows.length) {
             throw new NotFoundError('Gagal diperbarui lagu. Id tidak ditemukan');
         }
     }
