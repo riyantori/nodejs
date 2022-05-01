@@ -3,6 +3,8 @@ const { nanoid } = require("nanoid");
 const InvariantError = require('../../exceptions/InvariantError')
 const NotFoundError = require("../../exceptions/NotFoundError");
 const { mapDBModelSong } = require('../../utils/dbModelSong');
+const AuthenticationError = require('../../exceptions/AuthenticationError');
+const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class SongsService {
     constructor(){
@@ -10,13 +12,13 @@ class SongsService {
     }
 
     async addSong({
-        title, year, genre, performer, duration, 
+        title, year, genre, performer, duration, owner
     }) {
         const id = nanoid(16);
 
         const query = {
-            text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-            values: [id, title, year, genre, performer, duration, "albumId"],
+            text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+            values: [id, title, year, genre, performer, duration, "albumId", owner],
         };
         console.log(query.values)
         const result = await this._pool.query(query);
@@ -28,7 +30,7 @@ class SongsService {
         return result.rows[0].id;
     }
 
-    async getSongs(title, performer) {
+/*    async getSongs(title, performer) {
         let result = await this._pool.query('SELECT id, title, performer FROM songs')
 
         if (title !== undefined) {
@@ -42,6 +44,15 @@ class SongsService {
         if (performer !== undefined) {
             result = await this._pool.query(`SELECT id, title, performer FROM songs WHERE LOWER(performer) LIKE '%${performer}%'`);
         }
+        return result.rows.map(mapDBModelSong);
+    } */
+
+    async getSong(owner) {
+        const query = {
+            text: 'SELECT * FROM songs WHERE owner = $1',
+            values: [owner],
+        };
+        const result = await this._pool.query(query);
         return result.rows.map(mapDBModelSong);
     }
 
@@ -83,6 +94,25 @@ class SongsService {
 
         if (!result.rows.length) {
             throw new NotFoundError('Gagal menghapus lagu. Id tidak ditemukan')
+        }
+    }
+
+    async verifySongOwner(id, owner) {
+        const query = {
+            text: 'SELECT * FROM songs WHERE id=$1',
+            values: [id],
+        };
+        
+        const result = await this._pool.query(query);
+
+        if(!result.rows.length){
+            throw new NotFoundError('Lagu tidak ditemukan')
+        }
+
+        const song = result.rows[0];
+
+        if (song.owner !== owner) {
+            throw new AuthorizationError('Anda tidak berhak mengakses resource ini.')
         }
     }
 }
