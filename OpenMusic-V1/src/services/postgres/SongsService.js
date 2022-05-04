@@ -49,7 +49,7 @@ class SongsService {
 
     async getSong(owner) {
         const query = {
-            text: 'SELECT * FROM songs WHERE owner = $1',
+            text: 'SELECT songs.* FROM songs LEFT JOIN collaborations ON collaborations.song_id = songs.id WHERE songs.owner = $1 OR collaborations.user_id = $1 GROUP BY songs.id',
             values: [owner],
         };
         const result = await this._pool.query(query);
@@ -114,6 +114,16 @@ class SongsService {
         if (song.owner !== owner) {
             throw new AuthorizationError('Anda tidak berhak mengakses resource ini.')
         }
+    }
+
+    async getUsersByUsername (username) {
+        const query = {
+            text: 'SELECT id, username, fullname, FROM users WHERE username LIKE $1',
+            values: [`%${username}%`],
+        };
+
+        const result = await this._pool.query(query);
+        return result.rows;
     }
 }
 

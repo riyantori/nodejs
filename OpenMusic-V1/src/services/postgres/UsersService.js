@@ -6,8 +6,9 @@ const NotFoundError = require("../../exceptions/NotFoundError");
 const AuthenticationError = require("../../exceptions/AuthenticationError");
 
 class UsersService {
-    constructor(){
+    constructor(collaborationService){
         this._poll = new Pool();
+        this._collaborationService = collaborationService;
     }
 
     async addUser({ username, password, fullname}) {
@@ -73,6 +74,29 @@ class UsersService {
 
         const { id, password: hashedPassword } = result.rows[0];
         const match = await bcrypt.compare(password, hashedPassword);
+
+        if(!match) {
+            throw new AuthenticationError('Kredensial yang anda berikan salah')
+        }
+
+        return id;
+    }
+
+    async verifySongAccess(songId, userId) {
+        try{
+            await this.verifySongOwner(songId, userId)
+        }catch(error){
+            if (error instanceof NotFoundError){
+                throw error;
+            }
+        }
+
+        try{
+            await this._collaborationService.verifyCollaborator(songId, userId);
+        }catch{
+            throw error;
+        }
+
     }
 }
 
